@@ -1,0 +1,28 @@
+
+<div id="app-frame">
+    <div id="sel-frame">
+        <mat-form-field id="type-sel">
+            <mat-select [formControl]="typeCtrl"
+                        (selectionChange)="selChanged($event)">
+                <mat-option *ngFor="let type of selTypes" [value]="type">
+                    {{type}}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+        <button id="read-button"
+                mat-stroked-button
+                (click)="readSelected()"
+                [disabled]="udpBusy">
+            <mat-icon>file_download</mat-icon>
+            Read
+        </button>
+    </div>
+    <div id="items-frame">
+        <div *ngFor="let item of itemsMap | keyvalue">
+            <div [ngSwitch]="item.value.type">
+                <ssr *ngSwitchCase="g_const.ACTUATOR_ON_OFF" [onOff]="item.value"></ssr>
+                <sensor *ngSwitchCase="g_const.SENSOR" [sensor]="item.value"></sensor>
+            </div>
+        </div>
+    </div>
+</div>
