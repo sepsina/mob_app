@@ -1,5 +1,4 @@
-
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { EventsService } from './events.service';
 import { UtilsService } from './utils.service';
 
@@ -17,11 +16,7 @@ export class UdpService {
     public udpSocket: any;
 
     private msgBuf = window.nw.Buffer.alloc(1024);
-    //private msg: DataView = new DataView(this.msgBuf);
-
     bridges: gIF.bridge_t[] = [];
-
-    //ipSet = new Set();
     seqNum = 0;
 
     rdCmd: gIF.rdCmd_t = {
@@ -33,10 +28,13 @@ export class UdpService {
         retryCnt: gConst.RD_CMD_RETRY_CNT,
     };
 
+    itemsRef: any;
+
     rwBuf = new gIF.rwBuf_t();
 
     constructor(private events: EventsService,
-                private utils: UtilsService) {
+                private utils: UtilsService,
+                private ngZone: NgZone) {
         this.rwBuf.wrBuf = this.msgBuf;
         this.dgram = window.nw.require('dgram');
         this.udpSocket = this.dgram.createSocket('udp4');
@@ -69,13 +67,9 @@ export class UdpService {
         this.rwBuf.rdBuf = msg;
         this.rwBuf.rdIdx = 0;
 
-        //let msgBuf = this.utils.bufToArrayBuf(msg);
-        //let msgView = new DataView(msgBuf);
-
         let pktFunc = this.rwBuf.read_uint16_LE();
         switch(pktFunc) {
             case gConst.BRIDGE_ID_RSP: {
-                //this.ipSet.add(rem.address);
                 this.addBridge(rem.address);
                 break;
             }
@@ -97,8 +91,9 @@ export class UdpService {
                         name.push(this.rwBuf.read_uint8());
                     }
                     item.name = String.fromCharCode.apply(String, name);
-                    item.ip = this.utils.ipFromLong(this.rwBuf.read_uint32_LE());
-                    item.port = this.rwBuf.read_uint16_LE();
+                    item.ip = rem.address;
+                    item.port = rem.port;
+                    item.busy = false;
 
                     let key = this.itemKey(item.extAddr, item.endPoint);
                     this.events.publish('newItem', {key: key, value: item});
@@ -136,8 +131,8 @@ export class UdpService {
                 let numItems = this.rwBuf.read_uint16_LE();
                 let doneFlag = this.rwBuf.read_uint8();
                 for(let i = 0; i < numItems; i++) {
-                    let val: number;
-                    let units: number;
+                    //let val: number;
+                    //let units: number;
                     let item = {} as gIF.sensorItem_t;
                     item.hostIP = rem.address;
                     item.type = gConst.SENSOR;
@@ -146,9 +141,9 @@ export class UdpService {
                     item.endPoint = this.rwBuf.read_uint8();
                     switch(pktFunc) {
                         case gConst.T_SENSORS: {
-                            val = this.rwBuf.read_uint16_LE();
+                            let val = this.rwBuf.read_uint16_LE();
                             val = val / 10.0;
-                            units = this.rwBuf.read_uint16_LE();
+                            const units = this.rwBuf.read_uint16_LE();
                             if(units == gConst.DEG_F) {
                                 item.formatedVal = `${val.toFixed(1)} °F`;
                             }
@@ -158,15 +153,15 @@ export class UdpService {
                             break;
                         }
                         case gConst.RH_SENSORS: {
-                            val = this.rwBuf.read_uint16_LE();
+                            let val = this.rwBuf.read_uint16_LE();
                             val = Math.round(val / 10.0);
                             item.formatedVal = `${val.toFixed(0)} %rh`;
                             break;
                         }
                         case gConst.P_ATM_SENSORS: {
-                            val = this.rwBuf.read_uint16_LE();
+                            let val = this.rwBuf.read_uint16_LE();
                             val = val / 10.0;
-                            units = this.rwBuf.read_uint16_LE();
+                            const units = this.rwBuf.read_uint16_LE();
                             if(units == gConst.IN_HG) {
                                 item.formatedVal = `${val.toFixed(1)} inHg`;
                             }
@@ -177,7 +172,7 @@ export class UdpService {
                             break;
                         }
                         case gConst.BAT_VOLTS: {
-                            val = this.rwBuf.read_uint16_LE();
+                            let val = this.rwBuf.read_uint16_LE();
                             val = val / 10.0;
                             item.formatedVal = `${val.toFixed(1)} V`;
                             break;
@@ -218,10 +213,29 @@ export class UdpService {
                 }
                 break;
             }
-            case gConst.SL_MSG_ZCL_CMD: {
-                const msgSeqNum = this.rwBuf.read_uint8();;
-                if(msgSeqNum == this.seqNum){
-                    console.log("zcl response");
+            case gConst.UDP_ZCL_CMD: {
+                const msgSeqNum = this.rwBuf.read_uint8();
+                const extAddr = this.rwBuf.read_double_LE();
+                const endPoint = this.rwBuf.read_uint8();
+                const clusterID = this.rwBuf.read_uint16_LE();
+                const status = this.rwBuf.read_uint8();
+                if(msgSeqNum === this.seqNum){
+                    if(clusterID === gConst.CLUSTER_ID_GEN_ON_OFF){
+                        const key = this.itemKey(extAddr, endPoint);
+                        const item: gIF.onOffItem_t = this.itemsRef.get(key);
+                        if(item){
+                            if(status === 0){
+                                console.log(`cmd to ${item.name}: success`);
+                            }
+                            else {
+                                console.log(`cmd to ${item.name}: fail`);
+                            }
+                            clearTimeout(item.tmo);
+                            this.ngZone.run(()=>{
+                                item.busy = false;
+                            });
+                        }
+                    }
                 }
                 break;
             }
@@ -287,7 +301,7 @@ export class UdpService {
      */
     rdCmdTmo() {
 
-        console.log('--- READ_CMD_TMO ---');
+        console.log('--- TMO ---');
 
         if(this.rdCmd.ip.length == 0) {
             this.rdCmd.busy = false;

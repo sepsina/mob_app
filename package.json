@@ -6,9 +6,9 @@
   "chromium-args": "--disable-raf-throttling",
   "window": {
     "width": 450,
-    "height": 820,
+    "height": 600,
     "min_width": 400,
-    "min_height": 500,
+    "min_height": 300,
     "icon": "assets/icon.png"
   },
   "scripts": {

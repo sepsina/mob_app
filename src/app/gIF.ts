@@ -28,6 +28,8 @@ export interface onOffItem_t {
     partNum: number;
     extAddr: number;
     endPoint: number;
+    busy: boolean;
+    tmo: any;
 }
 
 export interface bridge_t {

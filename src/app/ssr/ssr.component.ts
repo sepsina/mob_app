@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, NgZone } from '@angular/core';
 import { UdpService } from '../udp.service';
 import { UtilsService } from '../utils.service';
 
@@ -27,7 +27,8 @@ export class ssrComponent implements OnInit {
     rwBuf = new gIF.rwBuf_t();
 
     constructor(private udp: UdpService,
-                private utils: UtilsService) {
+                private utils: UtilsService,
+                private ngZone: NgZone) {
         this.rwBuf.wrBuf = this.msgBuf;
     }
 
@@ -124,13 +125,9 @@ export class ssrComponent implements OnInit {
             return;
         }
         this.udp.seqNum = ++this.udp.seqNum % 256;
-
         this.rwBuf.wrIdx = 0;;
-        this.rwBuf.write_uint16_LE(gConst.SL_MSG_ZCL_CMD);
-        const lenIdx = this.rwBuf.wrIdx;
-        this.rwBuf.write_uint8(0);
-        // cmd data
-        const dataStartIdx = this.rwBuf.wrIdx;
+
+        this.rwBuf.write_uint16_LE(gConst.UDP_ZCL_CMD);
         this.rwBuf.write_uint8(this.udp.seqNum);
         this.rwBuf.write_double_LE(this.onOff.extAddr);
         this.rwBuf.write_uint8(this.onOff.endPoint);
@@ -141,6 +138,7 @@ export class ssrComponent implements OnInit {
         const startCmdIdx = this.rwBuf.wrIdx;
         this.rwBuf.write_uint8(0x11); // cluster spec cmd, not manu spec, client to srv dir, disable dflt rsp
         this.rwBuf.write_uint8(0); // seq num -> not used
+
         switch(state) {
             case OFF: {
                 this.rwBuf.write_uint8(OFF); // ON_OFF cluster cmd OFF
@@ -163,14 +161,19 @@ export class ssrComponent implements OnInit {
         const msgLen = this.rwBuf.wrIdx;
         const cmdLen = msgLen - startCmdIdx;
         this.rwBuf.modify_uint8(cmdLen, cmdLenIdx); // now cmdLen gets right value
-        const dataLen = msgLen - dataStartIdx;
-        this.rwBuf.modify_uint8(dataLen, lenIdx);
 
         this.udp.udpSocket.send(this.msgBuf.subarray(0, msgLen), 0, msgLen, this.onOff.port, this.onOff.ip, (err)=>{
             if(err){
                 console.log('tun on err: ' + JSON.stringify(err));
             }
         });
+
+        this.ngZone.run(()=>{
+            this.onOff.busy = true;
+        });
+        this.onOff.tmo = setTimeout(() => {
+            this.onOff.busy = false;
+        }, 1000);
     }
 
 }

@@ -1,14 +1,9 @@
 
 <div id="app-frame">
-    <div id="sel-frame">
-        <mat-form-field id="type-sel">
-            <mat-select [formControl]="typeCtrl"
-                        (selectionChange)="selChanged($event)">
-                <mat-option *ngFor="let type of selTypes" [value]="type">
-                    {{type}}
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
+    <div id="header">
+        <span id="sel-items">
+            {{getSelDesc()}}
+        </span>
         <button id="read-button"
                 mat-stroked-button
                 (click)="readSelected()"
@@ -16,6 +11,7 @@
             <mat-icon>file_download</mat-icon>
             Read
         </button>
+
     </div>
     <div id="items-frame">
         <div *ngFor="let item of itemsMap | keyvalue">
@@ -25,4 +21,30 @@
             </div>
         </div>
     </div>
+    <div id="footer">
+        <button id="sel-temp"
+                mat-stroked-button
+                (click)="selTemp()"
+                [disabled]="udpBusy">
+            <mat-icon>thermostat</mat-icon>
+            Temp
+        </button>
+        <button id="sel-rh"
+                mat-stroked-button
+                (click)="selRH()"
+                [disabled]="udpBusy">
+            <mat-icon>humidity</mat-icon>
+            RH
+        </button>
+        <button id="sel-act"
+                mat-stroked-button
+                (click)="selOnOffAct()"
+                [disabled]="udpBusy">
+            <mat-icon>actuators</mat-icon>
+            on-off
+        </button>
+
+
+    </div>
 </div>
+

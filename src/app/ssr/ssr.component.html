@@ -3,12 +3,14 @@
         {{getName()}}
     </div>
     <div id="button-card">
-        <button mat-stroked-button
+        <button [disabled]="onOff.busy"
+                mat-stroked-button
                 id="off-button"
                 (click)="setActuatorOff()">
             off
         </button>
         <button *ngIf="hasLevel == false"
+                [disabled]="onOff.busy"
                 mat-stroked-button
                 id="toggle-button"
                 (click)="toggleActuator()">
@@ -22,7 +24,8 @@
                     thumbLabel
                     [(ngModel)]="sliderVal">
         </mat-slider>
-        <button mat-stroked-button
+        <button [disabled]="onOff.busy"
+                mat-stroked-button
                 id="on-button"
                 (click)="setActuatorOn()">
             on
