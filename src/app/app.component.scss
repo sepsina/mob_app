@@ -1,25 +1,19 @@
 #app-frame {
-    //flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
-    //margin: 10px;
     gap: 10px;
-    border: 1px solid lightgrey;
-    border-radius: 6px;
     padding: 10px;
     height: 100%;
 }
+
 #header {
-    position: sticky;
-    top: 10px;
     display: flex;
     flex-direction: row;
     justify-content: end;
     padding: 10px;
     gap: 15px;
-    //min-height: 80px;
     border: 1px solid lightgrey;
     border-radius: 6px;
     background-color: lightgray;
@@ -34,36 +28,19 @@
     padding-left: 10px;
     color: gray;
 }
-#type-sel {
-    flex: 1 1 100%;
-    /*border: 1px solid lightgrey;*/
-    /*border-radius: 5px;*/
-    padding-left: 5px;
-    /*font-size: 120%;*/
-}
-#read-button {
-    //align-self: center;
-    //width: 35%;
-}
 
 #items-frame {
-    display: flex;
     flex: 1 1 auto;
+    display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
-    /*margin: 2px;*/
     gap: 10px;
-    //border: 1px solid lightgrey;
     overflow-x: auto;
     overflow-y: auto;
-    /*border-radius: 6px;*/
-    /*padding: 10px;*/
 }
 
 #footer {
-    position: sticky;
-    bottom: 10px;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -72,14 +49,4 @@
     background-color: lightgray;
     border-radius: 6px;
 }
-/*
-position: sticky;
-    top: 10px;
-    display: flex;
-    flex-direction: row;
-    justify-content: end;
-    padding: 10px;
-    //min-height: 80px;
-    border: 1px solid lightgrey;
-    background-color: aqua;
-*/
+
